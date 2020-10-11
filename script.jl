@@ -30,7 +30,8 @@ optimize!(model)
 
 # Power systems example NLP
 
-model = BilevelModel(Ipopt.Optimizer, mode = BilevelJuMP.ProductMode(1e-5))
+model = BilevelModel(Ipopt.Optimizer, 
+            mode = BilevelJuMP.ProductMode(1e-5))
 
 @variable(Upper(model), 0 <= qS <= 100, start = 15)
 
@@ -65,7 +66,8 @@ const CBC_BRIDGED = MOI.Bridges.full_bridge_optimizer(CBC_CACHED, Float64)
             MOI.Bridges.add_bridge(CBC_BRIDGED, MOI.Bridges.Constraint.SOCtoNonConvexQuadBridge{Float64})
 
 opt = QuadraticToBinary.Optimizer{Float64}(CBC_BRIDGED)
-model = BilevelModel(() -> opt, mode = BilevelJuMP.SOS1Mode())
+model = BilevelModel(() -> opt, 
+            mode = BilevelJuMP.SOS1Mode())
 
 @variable(Upper(model), 0 <= qS <= 100)
 
