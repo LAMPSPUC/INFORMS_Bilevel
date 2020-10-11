@@ -4,9 +4,30 @@ using Ipopt
 using JuMP
 using Test
 
-# Simple example
+# Example slide 9
 
-# TODO
+model = BilevelModel(Cbc.Optimizer, mode = BilevelJuMP.SOS1Mode())
+
+@variable(Upper(model), x)
+@variable(Lower(model), y)
+
+@objective(Upper(model), Min, -4x -3y)
+
+@objective(Lower(model), Min, y)
+
+@constraints(Lower(model), begin
+    c1, 2x+y <= 4
+    c2, x+2y <= 4
+    c3, x >= 0
+    c4, y >= 0
+end)
+
+optimize!(model)
+
+@test value(x) ≈ 2
+@test value(y) ≈ 0
+
+
 
 # Power systems example
 model = BilevelModel(Ipopt.Optimizer, mode = BilevelJuMP.SOS1Mode())
