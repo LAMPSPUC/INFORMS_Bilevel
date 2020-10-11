@@ -30,30 +30,38 @@ optimize!(model)
 
 
 # Power systems example
-model = BilevelModel(Ipopt.Optimizer, mode = BilevelJuMP.SOS1Mode())
 
-@variable(Upper(model), q1, start = 15)
-@variable(Lower(model), g[i=1:4], start = [20, 40, 40, 0][i])
+model = BilevelModel(Ipopt.Optimizer, mode = BilevelJuMP.ProductMode(1e-5))
 
-@constraint(Upper(model), q1 >= 0)
-@constraint(Upper(model), q1 <= 100)
+@variable(Upper(model), qS, start = 15)
 
-@objective(Lower(model), Min, 50g[2] + 100g[3] + 1000g[4])
-@constraint(Lower(model), b, g[1] + g[2] + g[3] + g[4] == 100)
-@constraint(Lower(model), g[1] <= q1)
-@constraint(Lower(model), g[2] <= 40)
-@constraint(Lower(model), g[3] <= 40)
-@constraint(Lower(model), g[4] <= 100)
-@constraint(Lower(model), lb[i=1:4], g[i] >= 0)
+@constraint(Upper(model), qS >= 0)
+@constraint(Upper(model), qS <= 100)
+
+@variable(Lower(model), gS, start = 20)
+@variable(Lower(model), gR1, start = 40)
+@variable(Lower(model), gR2, start = 40)
+@variable(Lower(model), gD, start = 0)
+
+@objective(Lower(model), Min, 50gR1 + 100gR2 + 1000gD)
+@constraint(Lower(model), b, gS + gR1 + gR2 + gD == 100)
+@constraint(Lower(model), gS <= qS)
+@constraint(Lower(model), gR1 <= 40)
+@constraint(Lower(model), gR2 <= 40)
+@constraint(Lower(model), gD <= 100)
+
+@constraint(Lower(model), gS >= 0)
+@constraint(Lower(model), gR1 >= 0)
+@constraint(Lower(model), gR2 >= 0)
+@constraint(Lower(model), gD >= 0)
 
 @variable(Upper(model), lambda, DualOf(b), start = 1_000)
-
-@objective(Upper(model), Max, lambda*g[1])
+@objective(Upper(model), Max, lambda*gS)
 
 optimize!(model)
 
 @test objective_value(model) ≈ 20_000  atol=1e-1
 @test BilevelJuMP.lower_objective_value(model) ≈ 6_000  atol=1e-1
-@test value(q1) ≈ 20 atol=1e-3
-@test value.(g) ≈ [20, 40, 40, 0] atol=1e-3
+@test value(qS) ≈ 20 atol=1e-3
+@test value.(gS) ≈ 20 atol=1e-3
 @test value(lambda) ≈ 1_000 atol=1e-3
